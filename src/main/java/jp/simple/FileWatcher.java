@@ -56,13 +56,14 @@ public class FileWatcher {
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                             String fileName = event.context().toString();
-                            // end.txtが作成されたら監視停止
+                            System.out.println("File created: " + fileName);
+                            // end.txtが作成されたらファイル監視を停止
                             if (fileName.equals("end.txt")) {
                                 stop();
                                 break;
                             }
 
-                            // 新しいファイルが作成されたらTaskを追加
+                            // 新しいファイルが作成されたらキューに、Taskを追加
                             taskQueue.add(new Task(watchPath.resolve(fileName).toString()));
                         }
                     }

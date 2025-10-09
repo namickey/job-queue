@@ -14,19 +14,21 @@ public class Task {
         System.out.println("Task開始: " + fileName);
 
         // ↓ ここでファイルに対する処理を行う START
-        
+
+        // 例として、4秒間スリープしてからファイルを削除する処理を行う
         try {
             Thread.sleep(4000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        // ↑ ここでファイルに対する処理を行う END
-
         File file = new File(fileName);
         if (file.exists()) {
             file.delete();
         }
+
+        // ↑ ここでファイルに対する処理を行う END
+
         System.out.println("Task終了: " + fileName + "ファイルを削除しました。");
     }
 }

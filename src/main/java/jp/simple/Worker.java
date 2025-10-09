@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class Worker {
+
     private ThreadPoolExecutor executor;
     private CompletionService<String> service;
     private int poolSize;
@@ -35,10 +36,12 @@ public class Worker {
 
         System.out.println("ファイル作成の監視を開始しました。ファイルが作成されたらTaskを実行します。");
 
+        // FileWatcherが終了するまで無限ループして待機
         while (fileWatcher.isRunning()) {
             Thread.sleep(20000);
             System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
+
         w.close();
 
     }
