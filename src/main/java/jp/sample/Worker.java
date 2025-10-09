@@ -23,19 +23,24 @@ public class Worker {
         this.service = new ExecutorCompletionService<String>(this.executor);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
         Worker w = new Worker(2);
         BlockingQueue<Task> queue = new LinkedBlockingQueue<Task>();
         w.execute(queue);
-        queue.add(new Task());
-        queue.add(new Task());
-        queue.add(new Task());
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+
+        FileWatcher fileWatcher = null;
+        fileWatcher = new FileWatcher("watched_dir", queue);
+        fileWatcher.start();
+
+        System.out.println("ファイル作成の監視を開始しました。ファイルが作成されたらTaskを実行します。");
+
+        while (fileWatcher.isRunning()) {
+            Thread.sleep(20000);
+            System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
         w.close();
+
     }
 
     public void execute(BlockingQueue<Task> queue) {
@@ -55,13 +60,13 @@ public class Worker {
     private void add(final BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
             public String call() throws Exception {
-                while(!isClose) {
+                while (!isClose) {
                     Task task = queue.poll(2, TimeUnit.SECONDS);
                     if (task != null) {
                         task.execute();
                     }
                 }
-                return "end.";
+                return "Worker is end.";
             }
         });
     }
