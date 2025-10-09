@@ -1,4 +1,4 @@
-package jp.sample;
+package jp.fullspec;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -30,7 +30,7 @@ public class Worker {
         w.execute(queue);
 
         FileWatcher fileWatcher = null;
-        fileWatcher = new FileWatcher("watched_dir", queue);
+        fileWatcher = new FileWatcher("rcv_dir", queue);
         fileWatcher.start();
 
         System.out.println("ファイル作成の監視を開始しました。ファイルが作成されたらTaskを実行します。");

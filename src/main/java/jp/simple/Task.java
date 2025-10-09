@@ -1,4 +1,4 @@
-package jp.sample;
+package jp.simple;
 
 import java.io.File;
 
