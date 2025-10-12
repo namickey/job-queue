@@ -14,7 +14,7 @@ public class Worker {
     private ThreadPoolExecutor executor;
     private CompletionService<String> service;
     private int poolSize;
-    private boolean isClose;
+    private volatile boolean isClose;
 
     public Worker(int poolSize) {
         this.poolSize = poolSize;
@@ -49,41 +49,39 @@ public class Worker {
         }
     }
 
-    public void close() {
+    public void close() throws InterruptedException, ExecutionException {
         this.isClose = true;
         for (int i = 0; i < poolSize; i++) {
             System.out.println(getResult());
         }
-        this.executor.shutdownNow();
+        this.executor.shutdown();
+        if(!this.executor.awaitTermination(30, TimeUnit.SECONDS)) {
+            this.executor.shutdownNow();
+        }
     }
 
     private void add(final BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
             public String call() throws Exception {
-                while (!isClose) {
-                    Task task = queue.poll(2, TimeUnit.SECONDS);
-                    if (task != null) {
-                        task.execute();
+                try {
+                    while (!isClose) {
+                        Task task = queue.poll(2, TimeUnit.SECONDS);
+                        if (task != null) {
+                            task.execute();
+                        }
                     }
+                } catch (Exception e) {
+                    // 適切なログ出力やエラー処理を実装
+                    System.err.println("Task execution failed: " + e.getMessage());
+                    throw e;
                 }
                 return "Worker is end.";
             }
         });
     }
 
-    private String getResult() {
-        Future<String> future = null;
-        while (future == null) {
-            future = this.service.poll();
-        }
-        String result = null;
-        try {
-            result = future.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        return result;
+    private String getResult() throws InterruptedException, ExecutionException{
+        Future<String> future = this.service.take();
+        return future.get();
     }
 }
