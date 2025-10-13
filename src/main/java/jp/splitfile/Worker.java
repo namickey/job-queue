@@ -23,20 +23,23 @@ public class Worker {
         this.service = new ExecutorCompletionService<String>(this.executor);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         Worker w = new Worker(2);
         BlockingQueue<Task> queue = new LinkedBlockingQueue<Task>();
         w.execute(queue);
 
-        FileWatcher fileWatcher = null;
-        fileWatcher = new FileWatcher("external_rcv_dir", queue);
+        FileWatcher fileWatcher = new FileWatcher("external_rcv_dir", queue);
         fileWatcher.start();
 
-        System.out.println("ファイル監視開始。external_rcv_dir内にファイルが作成を検知し、Taskを実行。");
+        System.out.println("ファイル監視開始。external_rcv_dir内のファイル作成を検知し、Taskを実行。");
 
         while (fileWatcher.isRunning()) {
-            Thread.sleep(10000);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
         w.close();
@@ -51,6 +54,7 @@ public class Worker {
 
     private void add(final BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
+            @Override
             public String call() throws Exception {
                 while (!isClose) {
                     Task task = queue.poll(5, TimeUnit.SECONDS);
@@ -58,7 +62,7 @@ public class Worker {
                         try {
                             task.execute();
                         } catch (Exception e) {
-                            System.err.println("Task execution failed: " + e.getMessage());
+                            System.err.println("Task execution failed.");
                             e.printStackTrace();
                         }
                     }
@@ -68,19 +72,28 @@ public class Worker {
         });
     }
 
-    public void close() throws InterruptedException, ExecutionException {
+    public void close() {
         this.isClose = true;
         for (int i = 0; i < poolSize; i++) {
             System.out.println(getResult());
         }
         this.executor.shutdown();
-        if (!this.executor.awaitTermination(20, TimeUnit.SECONDS)) {
-            this.executor.shutdownNow();
+        try {
+            if (!this.executor.awaitTermination(20, TimeUnit.SECONDS)) {
+                this.executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    private String getResult() throws InterruptedException, ExecutionException {
-        Future<String> future = this.service.take();
-        return future.get();
+    private String getResult() {
+        try {
+            Future<String> future = this.service.take();
+            return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
