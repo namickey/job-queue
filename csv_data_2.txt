@@ -1,5 +1,0 @@
-aa,aa,aa
-bb,bb,bb
-cc,cc,cc
-dd,dd,dd
-ee,ee,ee

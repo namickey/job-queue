@@ -1,7 +1,8 @@
-package jp.fullspec;
+package jp.splitfile;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
@@ -36,15 +37,23 @@ public class FileWatcher {
         watcherThread.start();
     }
 
-    public void stop() throws IOException, InterruptedException {
+    public void stop() {
         isRunning = false;
         if (watcherThread != null && watcherThread.isAlive()) {
             watcherThread.interrupt();
-            watcherThread.join(5000);
+            try {
+                watcherThread.join(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         if (watchService != null) {
-            watchService.close();
+            try {
+                watchService.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -63,7 +72,10 @@ public class FileWatcher {
                             }
 
                             // 新しいファイルが作成されたらTaskを追加
-                            taskQueue.add(new Task(watchPath.resolve(fileName).toString()));
+                            Task task = createTask(fileName);
+                            if (task != null) {
+                                taskQueue.add(task);
+                            }
                         }
                     }
                     key.reset();
@@ -73,7 +85,35 @@ public class FileWatcher {
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
+                stop();
+                break;
             }
+        }
+    }
+
+    private Task createTask(String fileName) throws IOException {
+        if (fileName.startsWith("data-a1")) {
+            if (fileName.endsWith(".trigger")) {
+                Files.deleteIfExists(watchPath.resolve(fileName));
+                System.out.println(fileName + "ファイルを削除しました。");
+                return new TaskA1(watchPath.resolve(fileName.replace(".trigger", ".csv")));
+            } else {
+                System.out.println("Ignoring non-trigger file: " + fileName);
+                return null;
+            }
+            
+        } else if (fileName.startsWith("data-b1")) {
+            if (fileName.endsWith(".trigger")) {
+                Files.deleteIfExists(watchPath.resolve(fileName));
+                System.out.println(fileName + "ファイルを削除しました。");
+                return new TaskB1(watchPath.resolve(fileName.replace(".trigger", ".csv")));
+            } else {
+                System.out.println("Ignoring non-trigger file: " + fileName);
+                return null;
+            }
+        } else {
+            System.out.println("Unknown file type: " + fileName);
+            return null;
         }
     }
 

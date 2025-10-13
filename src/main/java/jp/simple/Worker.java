@@ -31,7 +31,7 @@ public class Worker {
         w.execute(queue);
 
         FileWatcher fileWatcher = null;
-        fileWatcher = new FileWatcher("rcv_dir", queue);
+        fileWatcher = new FileWatcher("external_rcv_dir", queue);
         fileWatcher.start();
 
         System.out.println("ファイル作成の監視を開始しました。ファイルが作成されたらTaskを実行します。");
