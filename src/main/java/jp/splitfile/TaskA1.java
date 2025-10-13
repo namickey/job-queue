@@ -15,10 +15,9 @@ public class TaskA1 implements Task {
     }
 
     public void execute() {
-        System.out.println("Task開始: " + path);
+        System.out.println("Task A 開始: " + path);
 
         // ↓ ここでファイルに対する処理を行う START
-        
         try (FileReader fr = new FileReader(path.toFile());
                 BufferedReader br = new BufferedReader(fr);) {
             String line;
@@ -41,20 +40,14 @@ public class TaskA1 implements Task {
             throw new RuntimeException(e);
         }
 
-        try {
-            Thread.sleep(4000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         // ↑ ここでファイルに対する処理を行う END
 
         try {
             Files.delete(path);
+            System.out.println("Task A 終了: " + path.getFileName() + "ファイルを削除しました。");
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        System.out.println("Task終了: " + path.getFileName() + "ファイルを削除しました。");
     }
 }

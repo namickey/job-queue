@@ -13,6 +13,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class FileWatcher {
+
     private WatchService watchService;
     private Path watchPath;
     private BlockingQueue<Task> taskQueue;
@@ -24,6 +25,10 @@ public class FileWatcher {
         this.watchPath = Paths.get(directoryPath);
         this.watchService = FileSystems.getDefault().newWatchService();
         this.watchPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     public void start() {
@@ -59,9 +64,19 @@ public class FileWatcher {
 
     private void watchLoop() {
         while (isRunning && !Thread.currentThread().isInterrupted()) {
+            WatchKey key = null;
             try {
-                WatchKey key = watchService.poll(2, TimeUnit.SECONDS);
+                System.out.println("ファイル監視中...");
+                key = watchService.poll(10, TimeUnit.SECONDS);
                 if (key != null) {
+
+                    try {
+                        // ファイルが完全に書き込まれるまで待機
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                             String fileName = event.context().toString();
@@ -78,46 +93,49 @@ public class FileWatcher {
                             }
                         }
                     }
-                    key.reset();
                 }
             } catch (InterruptedException e) {
+                e.printStackTrace();
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
                 stop();
                 break;
+            } finally {
+                if (key != null) {
+                    boolean flg = key.reset();
+                    if (!flg) {
+                        System.out.println("★★★ WatchKey is no longer valid. Stopping watcher.");
+                        stop();
+                        break;
+                    }
+                }
             }
         }
     }
 
     private Task createTask(String fileName) throws IOException {
+
+        if (!fileName.endsWith(".trigger")) {
+            // トリガーファイル以外（CSVファイル）は無視
+            return null;
+        }
+        // トリガーファイルを削除
+        Files.deleteIfExists(watchPath.resolve(fileName));
+        System.out.println("トリガーファイル検知：" + fileName + " また、トリガーファイルを削除しました。");
+
+        // 対応するCSVファイルのパスを生成
+        Path csvPath = watchPath.resolve(fileName.replace(".trigger", ".csv"));
+
+        // タスク生成
         if (fileName.startsWith("data-a1")) {
-            if (fileName.endsWith(".trigger")) {
-                Files.deleteIfExists(watchPath.resolve(fileName));
-                System.out.println(fileName + "ファイルを削除しました。");
-                return new TaskA1(watchPath.resolve(fileName.replace(".trigger", ".csv")));
-            } else {
-                System.out.println("Ignoring non-trigger file: " + fileName);
-                return null;
-            }
-            
+            return new TaskA1(csvPath);
         } else if (fileName.startsWith("data-b1")) {
-            if (fileName.endsWith(".trigger")) {
-                Files.deleteIfExists(watchPath.resolve(fileName));
-                System.out.println(fileName + "ファイルを削除しました。");
-                return new TaskB1(watchPath.resolve(fileName.replace(".trigger", ".csv")));
-            } else {
-                System.out.println("Ignoring non-trigger file: " + fileName);
-                return null;
-            }
+            return new TaskB1(csvPath);
         } else {
             System.out.println("Unknown file type: " + fileName);
             return null;
         }
-    }
-
-    public boolean isRunning() {
-        return isRunning;
     }
 }

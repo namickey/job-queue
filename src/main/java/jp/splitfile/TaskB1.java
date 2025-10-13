@@ -16,7 +16,7 @@ public class TaskB1 implements Task {
     }
 
     public void execute() {
-        System.out.println("Task開始: " + path);
+        System.out.println("Task B 開始: " + path);
 
         // ↓ ここでファイルに対する処理を行う START
 
@@ -33,7 +33,7 @@ public class TaskB1 implements Task {
                     if (count % 5 == 1) {
                         fw.write(csvHeader + System.lineSeparator());
                     }
-                    System.out.println(i + "ファイル目: 、" + count + "行目: " + line);
+                    //System.out.println(i + "ファイル目: 、" + count + "行目: " + line);
                     fw.write(line + System.lineSeparator());
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -49,20 +49,14 @@ public class TaskB1 implements Task {
             throw new RuntimeException(e);
         }
 
-        try {
-            Thread.sleep(4000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         // ↑ ここでファイルに対する処理を行う END
 
         try {
             Files.delete(path);
+            System.out.println("Task B 終了: " + path.getFileName() + "ファイルを削除しました。");
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        System.out.println("Task終了: " + path.getFileName() + "ファイルを削除しました。");
     }
 }

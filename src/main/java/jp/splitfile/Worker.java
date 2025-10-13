@@ -33,10 +33,10 @@ public class Worker {
         fileWatcher = new FileWatcher("external_rcv_dir", queue);
         fileWatcher.start();
 
-        System.out.println("ファイル作成の監視を開始しました。ファイルが作成されたらTaskを実行します。");
+        System.out.println("ファイル監視開始。external_rcv_dir内にファイルが作成を検知し、Taskを実行。");
 
         while (fileWatcher.isRunning()) {
-            Thread.sleep(20000);
+            Thread.sleep(10000);
             System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
         w.close();
@@ -49,38 +49,37 @@ public class Worker {
         }
     }
 
-    public void close() throws InterruptedException, ExecutionException {
-        this.isClose = true;
-        for (int i = 0; i < poolSize; i++) {
-            System.out.println(getResult());
-        }
-        this.executor.shutdown();
-        if(!this.executor.awaitTermination(30, TimeUnit.SECONDS)) {
-            this.executor.shutdownNow();
-        }
-    }
-
     private void add(final BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
             public String call() throws Exception {
-                try {
-                    while (!isClose) {
-                        Task task = queue.poll(2, TimeUnit.SECONDS);
-                        if (task != null) {
+                while (!isClose) {
+                    Task task = queue.poll(5, TimeUnit.SECONDS);
+                    if (task != null) {
+                        try {
                             task.execute();
+                        } catch (Exception e) {
+                            System.err.println("Task execution failed: " + e.getMessage());
+                            e.printStackTrace();
                         }
                     }
-                } catch (Exception e) {
-                    // 適切なログ出力やエラー処理を実装
-                    System.err.println("Task execution failed: " + e.getMessage());
-                    throw e;
                 }
                 return "Worker is end.";
             }
         });
     }
 
-    private String getResult() throws InterruptedException, ExecutionException{
+    public void close() throws InterruptedException, ExecutionException {
+        this.isClose = true;
+        for (int i = 0; i < poolSize; i++) {
+            System.out.println(getResult());
+        }
+        this.executor.shutdown();
+        if (!this.executor.awaitTermination(20, TimeUnit.SECONDS)) {
+            this.executor.shutdownNow();
+        }
+    }
+
+    private String getResult() throws InterruptedException, ExecutionException {
         Future<String> future = this.service.take();
         return future.get();
     }
