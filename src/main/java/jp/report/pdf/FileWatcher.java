@@ -15,14 +15,14 @@ import jp.report.Task;
 public class FileWatcher {
 
     private WatchService watchService;
-    private Path watchPath;
+    private Path watchPath = Path.of("3.splited_csv_dir");
+    private Path outputDirPath = Path.of("4.create_pdf_report_dir");
     private BlockingQueue<Task> taskQueue;
     private Thread watcherThread;
     private volatile boolean isRunning = false;
 
-    public FileWatcher(String directoryPath, BlockingQueue<Task> taskQueue) {
+    public FileWatcher(BlockingQueue<Task> taskQueue) {
         this.taskQueue = taskQueue;
-        this.watchPath = Path.of(directoryPath);
         try {
             this.watchService = FileSystems.getDefault().newWatchService();
             this.watchPath.register(this.watchService, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE);
@@ -88,7 +88,7 @@ public class FileWatcher {
 
                             // 新しいファイルが作成されたらTaskをキューに追加
                             Path csvPath = watchPath.resolve(fileName);
-                            PdfTask task = new PdfTask(csvPath);
+                            PdfTask task = new PdfTask(csvPath, outputDirPath);
                             taskQueue.add(task);
                         }
                     }

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -16,15 +15,15 @@ import jp.report.Task;
 
 public class FileWatcher {
 
-    private WatchService watchService;
-    private Path watchPath;
     private BlockingQueue<Task> taskQueue;
+    private Path watchPath = Path.of("2.unziped_csv_dir");;
+    private Path outputDirPath = Path.of("3.splited_csv_dir");
+    private WatchService watchService;
     private Thread watcherThread;
     private volatile boolean isRunning = false;
 
-    public FileWatcher(String directoryPath, BlockingQueue<Task> taskQueue) {
+    public FileWatcher(BlockingQueue<Task> taskQueue) {
         this.taskQueue = taskQueue;
-        this.watchPath = Paths.get(directoryPath);
         try {
             this.watchService = FileSystems.getDefault().newWatchService();
             this.watchPath.register(this.watchService, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE);
@@ -133,9 +132,9 @@ public class FileWatcher {
 
         // タスク生成
         if (fileName.startsWith("data-a1")) {
-            return new TaskA1(csvPath);
+            return new TaskA1(csvPath, outputDirPath);
         } else if (fileName.startsWith("data-b1")) {
-            return new TaskB1(csvPath);
+            return new TaskB1(csvPath, outputDirPath);
         } else {
             System.out.println("Unknown file type: " + fileName);
             return null;

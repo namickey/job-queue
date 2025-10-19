@@ -18,8 +18,6 @@ public class Worker {
     private int poolSize;
     private volatile boolean isClose;
 
-    private static final String WATCH_DIR = "2.unziped_csv_dir";
-
     public Worker(int poolSize) {
         this.poolSize = poolSize;
         this.executor = new ThreadPoolExecutor(poolSize, poolSize, Long.MAX_VALUE, TimeUnit.NANOSECONDS,
@@ -33,10 +31,10 @@ public class Worker {
         BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
         w.execute(queue);
 
-        FileWatcher fileWatcher = new FileWatcher(WATCH_DIR, queue);
+        FileWatcher fileWatcher = new FileWatcher(queue);
         fileWatcher.start();
 
-        System.out.println("ファイル監視開始。" + WATCH_DIR + "内のファイル作成を検知し、Taskを実行。");
+        System.out.println("ファイル監視開始。");
 
         while (fileWatcher.isRunning()) {
             try {

@@ -10,27 +10,26 @@ import java.util.Base64;
 
 import jp.report.Task;
 
-public class PdfTask extends Task {
+public class PdfTask implements Task {
 
-    private Path dataPath;
+    private Path inputFilePath;
+    private Path outputDirPath;
 
-    private static final String PDF_INPUT_DIR = "3.splited_csv_dir";
-    private static final String PDF_OUTPUT_DIR = "4.create_pdf_report_dir";
-
-    public PdfTask(Path dataPath) {
-        this.dataPath = dataPath;
+    public PdfTask(Path inputFilePath, Path outputDirPath) {
+        this.inputFilePath = inputFilePath;
+        this.outputDirPath = outputDirPath;
     }
 
     @Override
     public void execute() {
 
         System.out.println("タスク開始");
-        System.out.println("データファイルのパス: " + dataPath.toString());
+        System.out.println("データファイルのパス: " + inputFilePath.toString());
 
         try {
 
             String format = Files.readString(Path.of("pdf_format", "report-a1-jp.jrxml"));
-            String data = Files.readString(dataPath);
+            String data = Files.readString(inputFilePath);
 
             String formatBase64 = Base64.getEncoder().encodeToString(format.getBytes("MS932"));
             String dataBase64 = Base64.getEncoder().encodeToString(data.getBytes("MS932"));
@@ -51,7 +50,7 @@ public class PdfTask extends Task {
 
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() == 200) {
-                String outputFileName = dataPath.toString().replace(PDF_INPUT_DIR, PDF_OUTPUT_DIR);
+                String outputFileName = outputDirPath.resolve(inputFilePath.getFileName()).toString();
                 Files.write(Path.of(outputFileName.substring(0, outputFileName.length() - 4) + ".pdf"), response.body());
             } else {
                 System.out.println("Failed: " + response.statusCode());
@@ -63,7 +62,7 @@ public class PdfTask extends Task {
 
         
         try {
-            Files.deleteIfExists(dataPath);
+            Files.deleteIfExists(inputFilePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
