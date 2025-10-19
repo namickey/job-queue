@@ -1,4 +1,4 @@
-package jp.splitfile;
+package jp.report.splitfile;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class TaskB1 implements Task {
+import jp.report.Task;
+
+public class TaskB1 extends Task {
 
     private Path path;
 
@@ -15,6 +17,7 @@ public class TaskB1 implements Task {
         this.path = path;
     }
 
+    @Override
     public void execute() {
         System.out.println("Task B 開始: " + path);
 
@@ -28,7 +31,7 @@ public class TaskB1 implements Task {
             int count = 1;
             while ((line = br.readLine()) != null) {
                 // 各行ごとに新規ファイルを作成
-                Path outputPath = Path.of("pdf_report_snd_dir", path.getFileName().toString() + "_file_" + i + ".csv");
+                Path outputPath = Path.of(OUTPUT_DIR, path.getFileName().toString() + "_file_" + i + ".csv");
                 try (FileWriter fw = new FileWriter(outputPath.toFile(), true)) {
                     if (count % 5 == 1) {
                         fw.write(csvHeader + System.lineSeparator());

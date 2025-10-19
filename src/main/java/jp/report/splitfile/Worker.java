@@ -1,4 +1,4 @@
-package jp.splitfile;
+package jp.report.splitfile;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -10,11 +10,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import jp.report.Task;
+
 public class Worker {
     private ThreadPoolExecutor executor;
     private CompletionService<String> service;
     private int poolSize;
     private volatile boolean isClose;
+
+    private static final String WATCH_DIR = "2.unziped_csv_dir";
 
     public Worker(int poolSize) {
         this.poolSize = poolSize;
@@ -26,13 +30,13 @@ public class Worker {
     public static void main(String[] args) {
 
         Worker w = new Worker(2);
-        BlockingQueue<Task> queue = new LinkedBlockingQueue<Task>();
+        BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
         w.execute(queue);
 
-        FileWatcher fileWatcher = new FileWatcher("external_rcv_dir", queue);
+        FileWatcher fileWatcher = new FileWatcher(WATCH_DIR, queue);
         fileWatcher.start();
 
-        System.out.println("ファイル監視開始。external_rcv_dir内のファイル作成を検知し、Taskを実行。");
+        System.out.println("ファイル監視開始。" + WATCH_DIR + "内のファイル作成を検知し、Taskを実行。");
 
         while (fileWatcher.isRunning()) {
             try {
@@ -42,8 +46,8 @@ public class Worker {
             }
             System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
-        w.close();
 
+        w.close();
     }
 
     public void execute(BlockingQueue<Task> queue) {
@@ -52,7 +56,7 @@ public class Worker {
         }
     }
 
-    private void add(final BlockingQueue<Task> queue) {
+    private void add(BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
             @Override
             public String call() throws Exception {
@@ -67,7 +71,7 @@ public class Worker {
                         }
                     }
                 }
-                return "Worker is end.";
+                return "Worker Thread is end.";
             }
         });
     }

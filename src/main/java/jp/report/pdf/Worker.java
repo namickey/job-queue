@@ -1,4 +1,4 @@
-package jp.report;
+package jp.report.pdf;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -10,13 +10,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class WorkerAndQueue {
+import jp.report.Task;
+
+public class Worker {
     private ThreadPoolExecutor executor;
     private CompletionService<String> service;
     private int poolSize;
     private volatile boolean isClose;
 
-    public WorkerAndQueue(int poolSize) {
+    private static final String WATCH_DIR = "3.splited_csv_dir";
+
+    public Worker(int poolSize) {
         this.poolSize = poolSize;
         this.executor = new ThreadPoolExecutor(poolSize, poolSize, Long.MAX_VALUE, TimeUnit.NANOSECONDS,
                 new LinkedBlockingQueue<Runnable>());
@@ -24,14 +28,15 @@ public class WorkerAndQueue {
     }
 
     public static void main(String[] args) {
-        WorkerAndQueue w = new WorkerAndQueue(2);
-        BlockingQueue<PdfTask> queue = new LinkedBlockingQueue<>();
+
+        Worker w = new Worker(2);
+        BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
         w.execute(queue);
 
-        FileWatcher fileWatcher = new FileWatcher("pdf_report_snd_dir", queue);
+        FileWatcher fileWatcher = new FileWatcher(WATCH_DIR, queue);
         fileWatcher.start();
 
-        System.out.println("ファイル監視開始。pdf_report_snd_dir内のファイル作成を検知し、PdfTaskを実行。");
+        System.out.println("ファイル監視開始。" + WATCH_DIR + "内のファイル作成を検知し、Taskを実行。");
 
         while (fileWatcher.isRunning()) {
             try {
@@ -45,18 +50,18 @@ public class WorkerAndQueue {
         w.close();
     }
 
-    public void execute(BlockingQueue<PdfTask> queue) {
+    public void execute(BlockingQueue<Task> queue) {
         for (int i = 0; i < poolSize; i++) {
             add(queue);
         }
     }
 
-    private void add(BlockingQueue<PdfTask> queue) {
+    private void add(BlockingQueue<Task> queue) {
         this.service.submit(new Callable<String>() {
             @Override
             public String call() throws Exception {
                 while (!isClose) {
-                    PdfTask task = queue.poll(5, TimeUnit.SECONDS);
+                    Task task = queue.poll(5, TimeUnit.SECONDS);
                     if (task != null) {
                         try {
                             task.execute();

@@ -1,4 +1,4 @@
-package jp.simple;
+package jp.sample.simple;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -12,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class FileWatcher {
+    
     private WatchService watchService;
     private Path watchPath;
     private BlockingQueue<Task> taskQueue;
