@@ -1,5 +1,6 @@
 package jp.report.splitfile;
 
+import java.nio.file.Path;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -26,13 +27,23 @@ public class Worker {
     }
 
     public static void main(String[] args) {
+        run();
+    }
 
+
+    private static FileWatcher getFileWatcher() {
+        return new FileWatcher(
+            Path.of("2.unziped_csv_dir"), 
+            Path.of("3.splited_csv_dir"));
+    }
+
+    private static void run() {
         Worker w = new Worker(2);
         BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
         w.execute(queue);
 
-        FileWatcher fileWatcher = new FileWatcher(queue);
-        fileWatcher.start();
+        FileWatcher fileWatcher = getFileWatcher();
+        fileWatcher.execute(queue);
 
         System.out.println("ファイル監視開始。");
 

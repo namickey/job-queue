@@ -33,6 +33,9 @@ public class TaskB1 implements Task {
             int count = 1;
             while ((line = br.readLine()) != null) {
                 // 各行ごとに新規ファイルを作成
+                if (!Files.exists(outputDirPath)) {
+                    Files.createDirectories(outputDirPath);
+                }
                 Path outputFilePath = outputDirPath.resolve(inputFilePath.getFileName().toString() + "_file_" + i + ".csv");
                 try (FileWriter fw = new FileWriter(outputFilePath.toFile(), true)) {
                     if (count % 5 == 1) {

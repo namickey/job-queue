@@ -1,5 +1,6 @@
 package jp.report.splitfile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -16,14 +17,16 @@ import jp.report.Task;
 public class FileWatcher {
 
     private BlockingQueue<Task> taskQueue;
-    private Path watchPath = Path.of("2.unziped_csv_dir");;
-    private Path outputDirPath = Path.of("3.splited_csv_dir");
+    private Path watchPath;
+    private Path outputDirPath;
     private WatchService watchService;
     private Thread watcherThread;
     private volatile boolean isRunning = false;
 
-    public FileWatcher(BlockingQueue<Task> taskQueue) {
-        this.taskQueue = taskQueue;
+    public FileWatcher(Path watchPath, Path outputDirPath) {
+        this.watchPath = watchPath;
+        this.outputDirPath = outputDirPath;
+
         try {
             this.watchService = FileSystems.getDefault().newWatchService();
             this.watchPath.register(this.watchService, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE);
@@ -37,7 +40,9 @@ public class FileWatcher {
         return isRunning;
     }
 
-    public void start() {
+    public void execute(BlockingQueue<Task> taskQueue) {
+        this.taskQueue = taskQueue;
+
         if (isRunning) {
             return;
         }
@@ -81,18 +86,43 @@ public class FileWatcher {
 
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                            String fileName = event.context().toString();
+                            String fileOrDirName = event.context().toString();
+                            System.out.println(fileOrDirName + " が作成されました。1");
                             // end.txtが作成されたら監視停止
-                            if ("end.txt".equals(fileName)) {
+                            if ("end.txt".equals(fileOrDirName)) {
                                 stop();
                                 break;
                             }
 
-                            // 新しいファイルが作成されたらTaskをキューに追加
-                            Task task = createTask(fileName);
-                            if (task != null) {
-                                taskQueue.add(task);
+                            if (Files.isDirectory(watchPath.resolve(fileOrDirName))) {
+                                // ディレクトリの場合
+
+                                for (File file : new File(watchPath.resolve(fileOrDirName).toString()).listFiles()) {
+                                    Path filePath = file.toPath();
+                                    System.out.println(filePath + " が作成されました。2");
+                                    // 新しいファイルが作成されたらTaskをキューに追加
+                                    Task task = createTask(filePath);
+                                    if (task != null) {
+                                        taskQueue.add(task);
+                                    }
+                                }
+
+                                while (new File(watchPath.resolve(fileOrDirName).toString()).listFiles().length > 0) {
+                                    Thread.sleep(2000);
+                                }
+
+                                Files.deleteIfExists(watchPath.resolve(fileOrDirName));
+
+                            // } else {
+                            //     // ファイルの場合
+
+                            //     // 新しいファイルが作成されたらTaskをキューに追加
+                            //     Task task = createTask(watchPath.resolve(fileOrDirName));
+                            //     if (task != null) {
+                            //         taskQueue.add(task);
+                            //     }
                             }
+
                         }
                     }
                 }
@@ -117,26 +147,29 @@ public class FileWatcher {
         }
     }
 
-    private Task createTask(String fileName) throws IOException {
+    private Task createTask(Path filePath) throws IOException {
 
-        if (!fileName.endsWith(".trigger")) {
-            // トリガーファイル以外（CSVファイル）は無視
-            return null;
-        }
-        // トリガーファイルを削除
-        Files.deleteIfExists(watchPath.resolve(fileName));
-        System.out.println("トリガーファイル検知：" + fileName + " また、トリガーファイルを削除しました。");
+        // if (!fileName.endsWith(".trigger")) {
+        //     // トリガーファイル以外（CSVファイル）は無視
+        //     return null;
+        // }
+        // // トリガーファイルを削除
+        // Files.deleteIfExists(watchPath.resolve(fileName));
+        // System.out.println("トリガーファイル検知：" + fileName + " また、トリガーファイルを削除しました。");
 
-        // 対応するCSVファイルのパスを生成
-        Path csvPath = watchPath.resolve(fileName.replace(".trigger", ".csv"));
+        // // 対応するCSVファイルのパスを生成
+        // Path csvPath = watchPath.resolve(fileName.replace(".trigger", ".csv"));
+
+        //Path csvPath = watchPath.resolve(fileName);
 
         // タスク生成
-        if (fileName.startsWith("data-a1")) {
-            return new TaskA1(csvPath, outputDirPath);
-        } else if (fileName.startsWith("data-b1")) {
-            return new TaskB1(csvPath, outputDirPath);
+        if (filePath.getFileName().toString().startsWith("data-a1")) {
+            return new TaskA1(filePath, outputDirPath.resolve(filePath.getParent().getFileName()));
+        } else if (filePath.getFileName().toString().startsWith("data-b1")) {
+            return new TaskB1(filePath, outputDirPath.resolve(filePath.getParent().getFileName()));
         } else {
-            System.out.println("Unknown file type: " + fileName);
+            System.out.println("Unknown file type: " + filePath);
+            Files.deleteIfExists(filePath);
             return null;
         }
     }

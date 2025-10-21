@@ -30,7 +30,11 @@ public class TaskA1 implements Task {
             int i = 1;
             while ((line = br.readLine()) != null) {
                 // 各行ごとに新規ファイルを作成
-                Path outputFilePath = outputDirPath.resolve(inputFilePath.getFileName().toString().replace(".csv", "") + "_no_" + String.format("%03d", i) + ".csv");
+                if (!Files.exists(outputDirPath)) {
+                    Files.createDirectories(outputDirPath);
+                }
+                Path outputFilePath = outputDirPath.resolve(inputFilePath.getFileName().toString().replace(".csv", "")
+                        + "_no_" + String.format("%03d", i) + ".csv");
                 try (java.io.FileWriter fw = new java.io.FileWriter(outputFilePath.toFile())) {
                     fw.write(csvHeader + System.lineSeparator());
                     fw.write(line);
@@ -40,7 +44,7 @@ public class TaskA1 implements Task {
                 }
                 i++;
             }
-            
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
