@@ -1,7 +1,9 @@
 package jp.report.pdf;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
@@ -46,7 +48,7 @@ public class PdfFileWatcher extends FileWatcher {
             return;
         }
 
-        isRunning  = true;
+        isRunning = true;
         watcherThread = new Thread(this::watchloop);
         watcherThread.setName("FileWatcher-Thread");
         watcherThread.start();
@@ -84,17 +86,31 @@ public class PdfFileWatcher extends FileWatcher {
 
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                            String fileName = event.context().toString();
-                            if ("end.txt".equals(fileName)) {
+                            String fileOrDirName = event.context().toString();
+                            if ("end.txt".equals(fileOrDirName)) {
                                 // end.txtが作成されたら監視停止
                                 stop();
                                 break;
                             }
 
-                            // 新しいファイルが作成されたらTaskをキューに追加
-                            Path csvPath = watchPath.resolve(fileName);
-                            PdfTask task = new PdfTask(csvPath, outputDirPath);
-                            taskQueue.add(task);
+                            if (Files.isDirectory(watchPath.resolve(fileOrDirName))) {
+                                // ディレクトリの場合
+
+                                for (File file : new File(watchPath.resolve(fileOrDirName).toString()).listFiles()) {
+                                    Path filePath = file.toPath();
+                                    // 新しいファイルが作成されたらTaskをキューに追加
+                                    //Path csvPath = watchPath.resolve(filePath);
+                                    PdfTask task = new PdfTask(filePath, outputDirPath.resolve(filePath.getParent().getFileName()));
+                                    taskQueue.add(task);
+                                }
+
+                                while (new File(watchPath.resolve(fileOrDirName).toString()).listFiles().length > 0) {
+                                    Thread.sleep(2000);
+                                }
+
+                                Files.deleteIfExists(watchPath.resolve(fileOrDirName));
+                            }
+
                         }
                     }
                 }

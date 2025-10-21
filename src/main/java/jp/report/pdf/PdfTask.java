@@ -50,6 +50,9 @@ public class PdfTask implements Task {
 
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() == 200) {
+                if (!Files.exists(outputDirPath)) {
+                    Files.createDirectories(outputDirPath);
+                }
                 String outputFileName = outputDirPath.resolve(inputFilePath.getFileName()).toString();
                 Files.write(Path.of(outputFileName.substring(0, outputFileName.length() - 4) + ".pdf"), response.body());
             } else {
