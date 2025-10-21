@@ -10,19 +10,22 @@ import java.nio.file.WatchService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import jp.report.FileWatcher;
 import jp.report.Task;
 
-public class FileWatcher {
+public class PdfFileWatcher extends FileWatcher {
 
     private WatchService watchService;
-    private Path watchPath = Path.of("3.splited_csv_dir");
-    private Path outputDirPath = Path.of("4.create_pdf_report_dir");
+    private Path watchPath;
+    private Path outputDirPath;
     private BlockingQueue<Task> taskQueue;
     private Thread watcherThread;
     private volatile boolean isRunning = false;
 
-    public FileWatcher(BlockingQueue<Task> taskQueue) {
-        this.taskQueue = taskQueue;
+    public PdfFileWatcher(Path watchPath, Path outputDirPath) {
+        this.watchPath = watchPath;
+        this.outputDirPath = outputDirPath;
+
         try {
             this.watchService = FileSystems.getDefault().newWatchService();
             this.watchPath.register(this.watchService, java.nio.file.StandardWatchEventKinds.ENTRY_CREATE);
@@ -36,7 +39,9 @@ public class FileWatcher {
         return isRunning;
     }
 
-    public void start() {
+    public void execute(BlockingQueue<Task> taskQueue) {
+        this.taskQueue = taskQueue;
+
         if (isRunning) {
             return;
         }

@@ -12,9 +12,10 @@ import java.nio.file.WatchService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import jp.report.FileWatcher;
 import jp.report.Task;
 
-public class FileWatcher {
+public class SplitFileWatcher extends FileWatcher {
 
     private BlockingQueue<Task> taskQueue;
     private Path watchPath;
@@ -23,7 +24,7 @@ public class FileWatcher {
     private Thread watcherThread;
     private volatile boolean isRunning = false;
 
-    public FileWatcher(Path watchPath, Path outputDirPath) {
+    public SplitFileWatcher(Path watchPath, Path outputDirPath) {
         this.watchPath = watchPath;
         this.outputDirPath = outputDirPath;
 

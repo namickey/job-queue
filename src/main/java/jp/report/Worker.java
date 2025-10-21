@@ -1,6 +1,5 @@
-package jp.report.splitfile;
+package jp.report;
 
-import java.nio.file.Path;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -11,9 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import jp.report.Task;
-
-public class Worker {
+public abstract class Worker {
     private ThreadPoolExecutor executor;
     private CompletionService<String> service;
     private int poolSize;
@@ -26,21 +23,11 @@ public class Worker {
         this.service = new ExecutorCompletionService<String>(this.executor);
     }
 
-    public static void main(String[] args) {
-        run();
-    }
+    protected abstract FileWatcher getFileWatcher();
 
-
-    private static FileWatcher getFileWatcher() {
-        return new FileWatcher(
-            Path.of("2.unziped_csv_dir"), 
-            Path.of("3.splited_csv_dir"));
-    }
-
-    private static void run() {
-        Worker w = new Worker(2);
+    protected void run() {
         BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
-        w.execute(queue);
+        execute(queue);
 
         FileWatcher fileWatcher = getFileWatcher();
         fileWatcher.execute(queue);
@@ -56,7 +43,7 @@ public class Worker {
             System.out.println("Worker is running...  end.txtが作成されたら終了します。");
         }
 
-        w.close();
+        close();
     }
 
     public void execute(BlockingQueue<Task> queue) {
